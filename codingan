@@ -1,0 +1,81 @@
+import streamlit as st
+import pandas as pd
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+# Membaca data dari file Excel
+df = pd.read_excel('df_cleaned.xlsx')
+
+# Streamlit App Title
+st.title("Dashboard Sebaran Obat di Tiap Rumah Sakit 💊")
+
+# Filter Utama di Halaman Utama
+st.header("Pilih Filter untuk Membandingkan Data")
+
+# Filter untuk Treatment Place
+selected_treatment_places = st.multiselect(
+    "Pilih Treatment Place:",
+    options=df['TreatmentPlace'].unique(),
+    default=df['TreatmentPlace'].unique()[:1]  # Pilihan default (ambil satu jika banyak)
+)
+
+# Filter untuk Group Provider
+selected_group_providers = st.multiselect(
+    "Pilih Group Provider:",
+    options=df['GroupProvider'].unique(),
+    default=df['GroupProvider'].unique()[:1]  # Pilihan default (ambil satu jika banyak)
+)
+
+# Tombol untuk Menampilkan Hasil
+if st.button("Tampilkan Perbandingan"):
+    if not selected_treatment_places and not selected_group_providers:
+        st.warning("Pilih setidaknya satu filter untuk Treatment Place atau Group Provider.")
+    else:
+        # Membuat kombinasi filter untuk dibandingkan
+        comparison_filters = [
+            (treatment, provider)
+            for treatment in selected_treatment_places
+            for provider in selected_group_providers
+        ]
+        
+        # Menggunakan Tabs untuk Membandingkan Data
+        st.header("Perbandingan Data")
+        if comparison_filters:
+            tabs = st.tabs([f"{treatment} - {provider}" for treatment, provider in comparison_filters])
+            for i, (treatment, provider) in enumerate(comparison_filters):
+                with tabs[i]:
+                    # Filter Data
+                    filtered_df = df.copy()
+                    if treatment:
+                        filtered_df = filtered_df[filtered_df['TreatmentPlace'] == treatment]
+                    if provider:
+                        filtered_df = filtered_df[filtered_df['GroupProvider'] == provider]
+                    
+                    # Tampilkan Tabel Data
+                    st.subheader(f"Tabel Data ({treatment} - {provider})")
+                    st.write(filtered_df[['TreatmentPlace', 'GroupProvider', 'Nama Item Garda Medika', 'Satuan', 'Qty', 'Amount Bill']])
+                    
+                    # Total Records
+                    st.text(f"Total Records: {len(filtered_df)}")
+                    
+                    # Total Amount Bill
+                    total_amount_bill = filtered_df['Amount Bill'].sum()
+                    formatted_total_amount_bill = f"Rp {total_amount_bill:,.0f}".replace(",", ".")
+                    st.subheader(f"Total Amount Bill: {formatted_total_amount_bill}")
+                    
+                    # WordCloud
+                    st.subheader(f"WordCloud ({treatment} - {provider})")
+                    if not filtered_df.empty:
+                        wordcloud_text = " ".join(filtered_df['Nama Item Garda Medika'].dropna().astype(str))
+                        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(wordcloud_text)
+                        
+                        # Display WordCloud
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        ax.imshow(wordcloud, interpolation="bilinear")
+                        ax.axis("off")
+                        st.pyplot(fig)
+                    else:
+                        st.warning("Tidak ada data yang cocok untuk filter ini.")
+else:
+    st.info("Gunakan filter di atas, lalu tekan tombol 'Tampilkan Perbandingan' untuk melihat hasil.")
+
