@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 # Membaca data dari file Excel
 try:
-    df = pd.read_excel('df_cleaned (1).xlsx')
+    df = pd.read_excel("df_cleaned (1).xlsx")
 except FileNotFoundError:
     st.error("File 'df_cleaned.xlsx' tidak ditemukan. Pastikan file ada di direktori yang benar.")
     st.stop()
